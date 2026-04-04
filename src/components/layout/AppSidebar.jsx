@@ -1,10 +1,23 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
+const NavItem = ({ to, icon, label, badge, onClick }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+    onClick={onClick}
+    end={to === '/dashboard'}
+  >
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {icon}
+    </svg>
+    {label}
+    {badge && <span className="nav-badge">{badge}</span>}
+  </NavLink>
+);
+
 export const AppSidebar = ({ isOpen, setSidebarOpen }) => {
-  const closeSidebar = () => {
-    if (window.innerWidth <= 768) setSidebarOpen(false);
-  };
+  const close = () => { if (window.innerWidth <= 768) setSidebarOpen(false); };
 
   return (
     <aside className={`app-sidebar ${isOpen ? 'open' : ''}`} id="app-sidebar" role="navigation" aria-label="App navigation">
@@ -19,51 +32,68 @@ export const AppSidebar = ({ isOpen, setSidebarOpen }) => {
       </div>
 
       <div className="sidebar-user">
-        <div className="avatar avatar-lg">RK</div>
+        <div className="avatar avatar-lg" style={{ background: '#3B9B9B' }}>RK</div>
         <div className="sidebar-user-info">
           <div className="sidebar-user-name">Riya Kulkarni</div>
-          <div className="sidebar-user-pod">☀️ Sunrise Riders Pod</div>
+          <div className="sidebar-user-pod">☀️ Sunrise Riders</div>
         </div>
       </div>
 
       <nav className="sidebar-nav" aria-label="App sections">
+        {/* Main */}
         <div className="nav-section-label">Main</div>
-        
-        <NavLink to="/app/dashboard" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="1" y="1" width="7" height="7" rx="1.5"/><rect x="10" y="1" width="7" height="7" rx="1.5"/><rect x="1" y="10" width="7" height="7" rx="1.5"/><rect x="10" y="10" width="7" height="7" rx="1.5"/></svg>
-          Dashboard
-        </NavLink>
-        
-        <NavLink to="/app/pod" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="6" cy="7" r="2.5"/><circle cx="12" cy="7" r="2.5"/><path d="M1 15c0-3 2.2-5 5-5h2M10 15c0-3 2.2-5 5-5H9"/></svg>
-          Community Pod
-        </NavLink>
-        
-        <NavLink to="/app/loan" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="1" y="4" width="16" height="12" rx="2"/><path d="M1 8h16M5 12h2M9 12h4"/></svg>
-          Request Loan
-          <span className="nav-badge">New</span>
-        </NavLink>
-        
-        <NavLink to="/app/simulation" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`} onClick={closeSidebar}>
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 14L6 8l4 3 4-5 3 2"/><circle cx="6" cy="8" r="1.5" fill="currentColor"/><circle cx="10" cy="11" r="1.5" fill="currentColor"/><circle cx="14" cy="6" r="1.5" fill="currentColor"/></svg>
-          Trust Simulator
-        </NavLink>
+        <NavItem to="/dashboard" label="Dashboard" onClick={close}
+          icon={<><rect x="1" y="1" width="7" height="7" rx="1.5"/><rect x="10" y="1" width="7" height="7" rx="1.5"/><rect x="1" y="10" width="7" height="7" rx="1.5"/><rect x="10" y="10" width="7" height="7" rx="1.5"/></>} />
+        <NavItem to="/transactions" label="Transaction Log" onClick={close}
+          icon={<><path d="M1 5h16M1 9h12M1 13h14"/></>} />
 
-        <div className="nav-section-label" style={{marginTop:'var(--sp-5)'}}>Account</div>
-        <button className="nav-item">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="6" r="3"/><path d="M2 16c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
-          Profile
-        </button>
-        <button className="nav-item">
-          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="2.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.2 3.2l1.4 1.4M13.4 13.4l1.4 1.4M3.2 14.8l1.4-1.4M13.4 4.6l1.4-1.4"/></svg>
-          Settings
-        </button>
+        {/* Borrower */}
+        <div className="nav-section-label" style={{ marginTop: 'var(--sp-4)' }}>Borrower</div>
+        <NavItem to="/profile" label="My Profile" onClick={close}
+          icon={<><circle cx="9" cy="6" r="3"/><path d="M2 16c0-3.5 3-6 7-6s7 2.5 7 6"/></>} />
+        <NavItem to="/loan/request" label="Request Loan" badge="New" onClick={close}
+          icon={<><rect x="1" y="4" width="16" height="12" rx="2"/><path d="M1 8h16M5 12h2M9 12h4"/></>} />
+        <NavItem to="/loan/repayment" label="Repayment Tracker" onClick={close}
+          icon={<><circle cx="9" cy="9" r="7"/><path d="M9 6v3l2 2"/></>} />
+        <NavItem to="/vouch" label="Community Vouch" onClick={close}
+          icon={<><circle cx="6" cy="7" r="2.5"/><circle cx="12" cy="7" r="2.5"/><path d="M1 15c0-3 2.2-5 5-5h6c2.8 0 5 2 5 5"/></>} />
+
+        {/* Lender */}
+        <div className="nav-section-label" style={{ marginTop: 'var(--sp-4)' }}>Lender</div>
+        <NavItem to="/loans" label="Browse Loans" onClick={close}
+          icon={<><rect x="1" y="1" width="16" height="11" rx="2"/><path d="M5 16l4-4 4 4M9 12v4"/></>} />
+        <NavItem to="/lender" label="Lender Dashboard" onClick={close}
+          icon={<><path d="M1 14L5 9l4 3 4-5 4 2"/></>} />
+        <NavItem to="/loan/fund" label="Fund a Loan" onClick={close}
+          icon={<><circle cx="9" cy="9" r="7"/><path d="M9 6v6M6.5 8h5M6.5 11h5"/></>} />
+
+        {/* Trust */}
+        <div className="nav-section-label" style={{ marginTop: 'var(--sp-4)' }}>Trust</div>
+        <NavItem to="/trust" label="Trust Score" onClick={close}
+          icon={<><path d="M9 1.5L2 4.5v5c0 3.5 3 6 7 7 4-1 7-3.5 7-7v-5L9 1.5z"/></>} />
+        <NavItem to="/verify" label="Identity Verify" onClick={close}
+          icon={<><rect x="2" y="3" width="14" height="12" rx="2"/><path d="M5 8h8M5 11h5"/><circle cx="13" cy="11" r="2" fill="currentColor"/></>} />
+
+        {/* Governance */}
+        <div className="nav-section-label" style={{ marginTop: 'var(--sp-4)' }}>Governance</div>
+        <NavItem to="/fraud" label="Fraud Voting" onClick={close}
+          icon={<><circle cx="9" cy="9" r="7"/><path d="M9 6v3M9 12v.5"/></>} />
+        <NavItem to="/governance" label="Loan Approval" onClick={close}
+          icon={<><path d="M1 9h16M5 5l4 4 4-4M5 13l4-4 4 4"/></>} />
+
+        {/* Account */}
+        <div className="nav-section-label" style={{ marginTop: 'var(--sp-4)' }}>Account</div>
+        <NavItem to="/app/simulation" label="Trust Simulator" onClick={close}
+          icon={<><path d="M1 14L6 8l4 3 4-5 3 2"/></>} />
+        <NavItem to="/app/pod" label="Community Pod" onClick={close}
+          icon={<><circle cx="6" cy="7" r="2.5"/><circle cx="12" cy="7" r="2.5"/><path d="M1 15c0-3 2.2-5 5-5h2M10 15c0-3 2.2-5 5-5H9"/></>} />
       </nav>
 
       <div className="sidebar-footer">
         <div className="security-hint" role="note">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 1L1.5 3.5v4.5C1.5 10.8 4 13 7 13.5c3-.5 5.5-2.7 5.5-5.5V3.5L7 1z"/></svg>
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M7 1L1.5 3.5v4.5C1.5 10.8 4 13 7 13.5c3-.5 5.5-2.7 5.5-5.5V3.5L7 1z"/>
+          </svg>
           Your data is encrypted &amp; protected
         </div>
       </div>

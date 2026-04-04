@@ -3,12 +3,40 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './components/shared/ToastProvider';
 
+// Auth
 import { LandingPage } from './pages/LandingPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { SignUpPage } from './pages/auth/SignUpPage';
+
+// App Layout
 import { AppLayout } from './components/layout/AppLayout';
+
+// Core
 import { DashboardPage } from './pages/DashboardPage';
-import { PodPage } from './pages/PodPage';
-import { LoanPage } from './pages/LoanPage';
+import { TransactionLogPage } from './pages/TransactionLogPage';
+
+// Borrower
+import { BorrowerProfilePage } from './pages/borrower/BorrowerProfilePage';
+import { RequestLoanPage } from './pages/borrower/RequestLoanPage';
+import { RepaymentTrackerPage } from './pages/borrower/RepaymentTrackerPage';
+import { CommunityVouchingPage } from './pages/borrower/CommunityVouchingPage';
+
+// Lender
+import { BrowseLoansPage } from './pages/lender/BrowseLoansPage';
+import { LenderDashboardPage } from './pages/lender/LenderDashboardPage';
+import { FundLoanPage } from './pages/lender/FundLoanPage';
+
+// Trust
+import { TrustScoreDetailPage } from './pages/trust/TrustScoreDetailPage';
+import { IdentityVerificationPage } from './pages/trust/IdentityVerificationPage';
+
+// Governance
+import { FraudVotingPage } from './pages/governance/FraudVotingPage';
+import { LoanApprovalVotingPage } from './pages/governance/LoanApprovalVotingPage';
+
+// Existing pages (simulation / pod from old prototype)
 import { SimulationPage } from './pages/SimulationPage';
+import { PodPage } from './pages/PodPage';
 
 export default function App() {
   return (
@@ -16,16 +44,68 @@ export default function App() {
       <AppProvider>
         <ToastProvider>
           <Routes>
+            {/* Public */}
             <Route path="/" element={<LandingPage />} />
-            
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+
+            {/* App shell */}
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
+              {/* Legacy routes from old prototype */}
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="pod" element={<PodPage />} />
-              <Route path="loan" element={<LoanPage />} />
+              <Route path="loan" element={<RequestLoanPage />} />
               <Route path="simulation" element={<SimulationPage />} />
             </Route>
-            
+
+            {/* Core */}
+            <Route path="/dashboard" element={<AppLayout />}>
+              <Route index element={<DashboardPage />} />
+            </Route>
+            <Route path="/transactions" element={<AppLayout />}>
+              <Route index element={<TransactionLogPage />} />
+            </Route>
+
+            {/* Borrower */}
+            <Route path="/profile" element={<AppLayout />}>
+              <Route index element={<BorrowerProfilePage />} />
+            </Route>
+            <Route path="/loan" element={<AppLayout />}>
+              <Route index element={<Navigate to="request" replace />} />
+              <Route path="request" element={<RequestLoanPage />} />
+              <Route path="repayment" element={<RepaymentTrackerPage />} />
+              <Route path="fund" element={<FundLoanPage />} />
+            </Route>
+            <Route path="/vouch" element={<AppLayout />}>
+              <Route index element={<CommunityVouchingPage />} />
+            </Route>
+
+            {/* Lender */}
+            <Route path="/loans" element={<AppLayout />}>
+              <Route index element={<BrowseLoansPage />} />
+            </Route>
+            <Route path="/lender" element={<AppLayout />}>
+              <Route index element={<LenderDashboardPage />} />
+            </Route>
+
+            {/* Trust */}
+            <Route path="/trust" element={<AppLayout />}>
+              <Route index element={<TrustScoreDetailPage />} />
+            </Route>
+            <Route path="/verify" element={<AppLayout />}>
+              <Route index element={<IdentityVerificationPage />} />
+            </Route>
+
+            {/* Governance */}
+            <Route path="/fraud" element={<AppLayout />}>
+              <Route index element={<FraudVotingPage />} />
+            </Route>
+            <Route path="/governance" element={<AppLayout />}>
+              <Route index element={<LoanApprovalVotingPage />} />
+            </Route>
+
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ToastProvider>
