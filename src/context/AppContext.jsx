@@ -1,15 +1,59 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { MOCK_USER, MOCK_ACTIVE_LOAN, MOCK_LENDER } from '../data/mockData';
+import { supabase } from '../utils/supabaseClient';
 
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  // Auth state - Defaults to empty, populated from Supabase via LoginPage/SignUpPage
-  const [user, setUser] = useState({});
+  // Auth state - Fetched from Supabase DB
+  const [user, setUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // KYC status - derived from user.kycStatus
+  // Fetch full profile using the authenticated user id
+  const loadProfile = async (authUser) => {
+    if (!authUser) return;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+    
+    if (profile) {
+      setUser({
+        ...authUser,
+        ...profile,
+        kycStatus: profile.kyc_status, // map DB snake_case to app camelCase
+      });
+      setIsLoggedIn(true);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Check active session on initial load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user).finally(() => setAuthLoading(false));
+      } else {
+        setAuthLoading(false);
+      }
+    });
+
+    // 2. Listen for login/logout events globally
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadProfile(session.user);
+      } else {
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // KYC status - derived from Supabase user.kycStatus
   const kycCompleted = user?.kycStatus === 'completed';
 
   // Trust score (derived from verification, streak, vouchers)

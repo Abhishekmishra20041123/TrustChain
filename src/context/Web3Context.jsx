@@ -17,9 +17,18 @@ export const Web3Provider = ({ children }) => {
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
+        let accounts;
+        try {
+          accounts = await window.ethereum.request({
+            method: "eth_requestAccounts",
+          });
+        } catch (err) {
+          if (err.code === -32002) {
+            alert("🦊 MetaMask is already waiting for your approval!\n\nPlease click the MetaMask extension icon in the top right of your browser to approve the connection.");
+            return null;
+          }
+          throw err;
+        }
         
         setAccount(accounts[0]);
         

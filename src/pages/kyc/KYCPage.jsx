@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { supabase } from '../../utils/supabaseClient';
 import { useToast } from '../../components/shared/ToastProvider';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 
 const STEPS = ['PAN Card', 'Aadhaar Card', 'Mobile OTP', 'Face Check'];
 
@@ -32,14 +33,24 @@ const PanStep = ({ onNext }) => {
   const [pan, setPan] = useState('');
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
-  const validate = (e) => {
+  const validate = async (e) => {
     e.preventDefault();
     setError('');
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan.toUpperCase()))
       return setError('Invalid PAN format. Example: ABCDE1234F');
     if (!file) return setError('Please upload your PAN Card image.');
-    onNext({ panNumber: pan.toUpperCase() });
+    
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setUploading(false);
+      onNext({ panNumber: pan.toUpperCase(), pan_image_url: url });
+    } catch (err) {
+      setUploading(false);
+      setError('Image upload failed: ' + err.message);
+    }
   };
 
   return (
@@ -68,7 +79,9 @@ const PanStep = ({ onNext }) => {
             onChange={e => setFile(e.target.files[0])} />
         </label>
       </div>
-      <button type="submit" className="btn btn-primary w-full mt-4" id="pan-next-btn">Continue →</button>
+      <button type="submit" className="btn btn-primary w-full mt-4" id="pan-next-btn" disabled={uploading}>
+        {uploading ? 'Uploading Image...' : 'Continue →'}
+      </button>
       <div className="auth-hint text-xs text-muted text-center mt-3">🔒 Documents are never shared</div>
     </form>
   );
@@ -79,19 +92,29 @@ const AadhaarStep = ({ onNext, onBack }) => {
   const [aadhaar, setAadhaar] = useState('');
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   const formatAadhaar = (val) => {
     const digits = val.replace(/\D/g, '').slice(0, 12);
     return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
   };
 
-  const validate = (e) => {
+  const validate = async (e) => {
     e.preventDefault();
     setError('');
     const raw = aadhaar.replace(/\s/g, '');
     if (raw.length !== 12) return setError('Aadhaar must be exactly 12 digits.');
     if (!file) return setError('Please upload your Aadhaar Card image.');
-    onNext({ aadhaarNumber: raw });
+    
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setUploading(false);
+      onNext({ aadhaarNumber: raw, aadhaar_image_url: url });
+    } catch (err) {
+      setUploading(false);
+      setError('Image upload failed: ' + err.message);
+    }
   };
 
   return (
@@ -124,8 +147,10 @@ const AadhaarStep = ({ onNext, onBack }) => {
         </label>
       </div>
       <div className="flex gap-3 mt-4">
-        <button type="button" className="btn btn-outline flex-1" onClick={onBack}>← Back</button>
-        <button type="submit" className="btn btn-primary flex-1" id="aadhaar-next-btn">Continue →</button>
+        <button type="button" className="btn btn-outline flex-1" onClick={onBack} disabled={uploading}>← Back</button>
+        <button type="submit" className="btn btn-primary flex-1" id="aadhaar-next-btn" disabled={uploading}>
+          {uploading ? 'Uploading Image...' : 'Continue →'}
+        </button>
       </div>
     </form>
   );
@@ -473,7 +498,9 @@ export const KYCPage = () => {
       .from('profiles')
       .update({
         pan_number: finalData.panNumber,
+        pan_image_url: finalData.pan_image_url,
         aadhaar_number: finalData.aadhaarNumber,
+        aadhaar_image_url: finalData.aadhaar_image_url,
         phone_number: finalData.phoneNumber,
         kyc_status: 'completed',
       })

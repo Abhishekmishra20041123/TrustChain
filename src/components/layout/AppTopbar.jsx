@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useToast } from '../shared/ToastProvider';
+import { Web3Context } from '../../context/Web3Context';
 
 const SCREEN_TITLES = {
   '/app/dashboard': 'Dashboard',
@@ -13,6 +14,7 @@ export const AppTopbar = ({ toggleSidebar }) => {
   const location = useLocation();
   const [title, setTitle] = useState('Dashboard');
   const showToast = useToast();
+  const { account, connectWallet } = useContext(Web3Context);
 
   useEffect(() => {
     setTitle(SCREEN_TITLES[location.pathname] || '');
@@ -31,7 +33,33 @@ export const AppTopbar = ({ toggleSidebar }) => {
       
       <div className="topbar-title" id="topbar-title">{title}</div>
       
-      <div className="topbar-actions">
+      <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        
+        {!account ? (
+          <button 
+            type="button"
+            className="btn" 
+            style={{ backgroundColor: '#F6851B', color: '#fff', fontSize: '13px', padding: '6px 12px', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={async (e) => {
+              e.preventDefault();
+              console.log('Connect MetaMask button clicked!');
+              try {
+                const res = await connectWallet();
+                console.log('connectWallet returned:', res);
+              } catch (err) {
+                console.error('connectWallet threw an error:', err);
+              }
+            }}
+          >
+            <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" style={{ width: '16px', height: '16px' }} />
+            <span className="hidden-mobile">Connect MetaMask</span>
+          </button>
+        ) : (
+          <div style={{ backgroundColor: '#EAF3DE', color: 'var(--color-success)', fontSize: '13px', padding: '6px 12px', borderRadius: '8px', fontWeight: 600, border: '1px solid #BFE096', fontFamily: 'monospace' }}>
+            {`${account.slice(0, 6)}...${account.slice(-4)}`}
+          </div>
+        )}
+
         <button 
           className="btn btn-icon btn-ghost" 
           id="topbar-notify-btn" 
