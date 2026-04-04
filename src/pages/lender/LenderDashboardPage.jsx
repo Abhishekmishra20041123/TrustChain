@@ -101,15 +101,18 @@ export const LenderDashboardPage = () => {
     );
   }
 
+  // Placeholder for any off-chain loans the lender might have (fallback)
+  const dbLoans = [];
+
   // Derive stats (mixing AppContext mockup with real blockchain if available)
   const p = portfolio;
   const blockchainTotalLent = p ? p.totalDeployed : 0;
   const dbTotalLent = dbLoans.reduce((s, l) => s + (l.amount || l.principal), 0);
-  const displayTotalLent = lenderData.totalLent + blockchainTotalLent + dbTotalLent;
+  const displayTotalLent = (lenderData?.totalLent || 0) + blockchainTotalLent + dbTotalLent;
   
   const blockchainActiveCount = p ? p.outstanding.length : 0;
   const dbActiveCount = dbLoans.filter(l => l.status === 'active' || l.status === 'funded').length;
-  const displayActiveLoans = lenderData.activeLoans + blockchainActiveCount + dbActiveCount;
+  const displayActiveLoans = (lenderData?.activeLoans || 0) + blockchainActiveCount + dbActiveCount;
 
   const totalInterest = p ? p.totalExpected - p.totalDeployed : 0;
   
@@ -154,13 +157,13 @@ export const LenderDashboardPage = () => {
         <StatCard label="Total Lent" value={`₹${displayTotalLent.toLocaleString('en-IN')}`}
           sub="Across all loans" color="var(--color-warning)"
           icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="5" width="18" height="12" rx="2"/><path d="M1 9h18"/></svg>} />
-        <StatCard label="Interest Earned" value={`₹${lenderData.interestEarned.toLocaleString('en-IN')}`}
+        <StatCard label="Interest Earned" value={`₹${(lenderData?.interestEarned || 0).toLocaleString('en-IN')}`}
           sub="Net returns" color="var(--color-success)"
           icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 15l5-7 4 3 4-6 5 3"/></svg>} />
         <StatCard label="Active Loans" value={displayActiveLoans}
           sub="Currently funded" color="var(--color-primary)"
           icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 2L3 6v6c0 4 3 6.5 7 8 4-1.5 7-4 7-8V6l-7-4z"/></svg>} />
-        <StatCard label="Repayments Received" value={`₹${(lenderData.repaymentsReceived + (p?.totalRepaid || 0)).toLocaleString('en-IN')}`}
+        <StatCard label="Repayments Received" value={`₹${((lenderData?.repaymentsReceived || 0) + (p?.totalRepaid || 0)).toLocaleString('en-IN')}`}
           sub="Returned to you" color="#185FA5"
           icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M18 10H2M8 4l-6 6 6 6"/></svg>} />
       </div>
