@@ -19,7 +19,7 @@ const pill = (status) => {
 export const LenderDashboardPage = () => {
   const navigate  = useNavigate();
   const showToast = useToast();
-  const { lenderData } = useContext(AppContext);
+  const { lenderData, user } = useContext(AppContext);
   const { contract, account, trustScore } = useContext(Web3Context);
 
   const [portfolio, setPortfolio]   = useState(null);
@@ -117,9 +117,6 @@ export const LenderDashboardPage = () => {
       </section>
     );
   }
-
-  // Placeholder for any off-chain loans the lender might have (fallback)
-  const dbLoans = [];
 
   // Derive stats (mixing AppContext mockup with real blockchain if available)
   const p = portfolio;
