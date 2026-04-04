@@ -166,16 +166,37 @@ const OtpStep = ({ onNext, onBack }) => {
 
   const sendOtp = async () => {
     setError('');
-    if (!/^[6-9]\d{9}$/.test(phone)) return setError('Enter a valid 10-digit Indian mobile number.');
+    const cleanPhone = phone.replace(/\D/g, '').slice(0, 10);
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) return setError('Enter a valid 10-digit Indian mobile number.');
+    
     setLoading(true);
-    const { error: err } = await supabase.auth.updateUser({
-      phone: `+91${phone}`
-    });
-    setLoading(false);
-    if (err) return setError(err.message);
-    setOtpSent(true);
-    setCooldown(60);
-    setDigits(['', '', '', '', '', '']);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      // If the user already has this phone number assigned and verified, skip the SMS flow!
+      if (user && (user.phone === `+91${cleanPhone}` || user.phone === `91${cleanPhone}`)) {
+        setLoading(false);
+        onNext({ phoneNumber: cleanPhone });
+        return;
+      }
+
+      const { error: err } = await supabase.auth.updateUser({
+        phone: `+91${cleanPhone}`
+      });
+      setLoading(false);
+      
+      if (err) {
+        if (err.status === 429) return setError('Too many requests. Please wait 60 seconds before trying again.');
+        return setError(err.message);
+      }
+      
+      setOtpSent(true);
+      setCooldown(60);
+      setDigits(['', '', '', '', '', '']);
+    } catch (e) {
+      setLoading(false);
+      setError('An unexpected error occurred.');
+    }
   };
 
   const verifyOtp = async (e) => {
