@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
+import { Web3Context } from '../../context/Web3Context';
 import { useToast } from '../../components/shared/ToastProvider';
 import { calcLoan } from '../../utils/formatters';
 
@@ -12,6 +13,7 @@ export const RequestLoanPage = () => {
   const [story, setStory] = useState('');
   const [riskTier, setRiskTier] = useState('Low');
   const [weeklyPayment, setWeeklyPayment] = useState(0);
+  const { contract, account } = useContext(Web3Context);
   const showToast = useToast();
   const navigate = useNavigate();
 
@@ -24,17 +26,26 @@ export const RequestLoanPage = () => {
   const riskColor = { Low: 'var(--color-success)', Medium: 'var(--color-warning)', High: 'var(--color-danger)' };
   const riskPill = { Low: 'pill-success', Medium: 'pill-warning', High: 'pill-danger' };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (window.showTcDialog) {
-      window.showTcDialog(
-        'Submit Loan Request',
-        `You are requesting ₹${amount.toLocaleString('en-IN')} for ${period} month(s). Your community will review and fund it within 24 hours.`,
-        () => {
-          showToast('Loan request submitted! Your community will review it shortly.', 'success');
-          navigate('/dashboard');
-        }
-      );
+    if (!contract || !account) {
+      showToast('Please connect your MetaMask wallet first!', 'error');
+      return;
+    }
+
+    try {
+      showToast('Please confirm the transaction in MetaMask...', 'info');
+      // Execute the requestLoan function from TrustChain.sol
+      const tx = await contract.requestLoan(amount, purpose);
+      
+      showToast('Waiting for blockchain confirmation...', 'info');
+      await tx.wait(); // Wait for the block to be mined
+      
+      showToast('Loan request successfully written to the blockchain! 🎉', 'success');
+      navigate('/app/dashboard');
+    } catch (err) {
+      console.error(err);
+      showToast('Transaction was rejected or failed.', 'error');
     }
   };
 
@@ -132,10 +143,13 @@ export const RequestLoanPage = () => {
           </div>
 
           <button type="submit" className="btn btn-primary w-full mt-6" id="submit-loan-btn">
-            Submit Loan Request →
+             <svg viewBox="0 0 32 32" fill="none" width="16" height="16" aria-hidden="true" style={{marginRight: '8px', verticalAlign: 'middle'}}>
+                <path d="M29.5 12L20 4.5l-4-3-4 3-9.5 7.5L5 21l3 7.5L16 29l8-1.5 3-7.5 2.5-9z" fill="#F6851B" stroke="#F6851B" strokeWidth="1" strokeLinejoin="round"/>
+             </svg>
+            Sign & Submit with Web3 →
           </button>
           <div className="text-center text-xs text-muted mt-3">
-            🔒 Prototype — no real funds transferred
+            🔒 Fully decentralized blockchain architecture
           </div>
         </form>
 

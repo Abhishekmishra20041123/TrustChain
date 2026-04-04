@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+import { Web3Provider } from './context/Web3Context';
 import { ToastProvider } from './components/shared/ToastProvider';
 
 // Auth
@@ -41,8 +42,9 @@ import { PodPage } from './pages/PodPage';
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <ToastProvider>
+      <Web3Provider>
+        <AppProvider>
+          <ToastProvider>
           <Routes>
             {/* Public */}
             <Route path="/" element={<LandingPage />} />
@@ -110,6 +112,7 @@ export default function App() {
           </Routes>
         </ToastProvider>
       </AppProvider>
+      </Web3Provider>
     </BrowserRouter>
   );
 }

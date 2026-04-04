@@ -1,0 +1,41 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "D:\\ALL_FOLDERS\\NAKSHATRA_OK\\trustchain-react\\contracts\\TrustChain.sol": {
+      "lastModificationDate": 1775301599737,
+      "contentHash": "483cf9ccc58811bd055dc0d867c449ee",
+      "sourceName": "contracts/TrustChain.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "TrustChain"
+      ]
+    }
+  }
+}

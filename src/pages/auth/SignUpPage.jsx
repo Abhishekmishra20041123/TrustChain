@@ -1,22 +1,28 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
+import { Web3Context } from '../../context/Web3Context';
 import { StepIndicator, TrustGaugeLarge } from '../../components/shared/SharedComponents';
 
 const STEPS = ['Your details', 'Identity', 'Trust Score'];
 
 export const SignUpPage = () => {
   const navigate = useNavigate();
-  const { onboardingStep, setOnboardingStep, setVerification } = useContext(AppContext);
+  const { onboardingStep, setOnboardingStep, setVerification, setUser, user, setIsLoggedIn } = useContext(AppContext);
+  const { connectWallet, account } = useContext(Web3Context);
   const [role, setRole] = useState('borrower');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [docType, setDocType] = useState(null);
   const [docUploaded, setDocUploaded] = useState(false);
   const [generatedScore] = useState(72);
 
   const handleStep1 = (e) => {
     e.preventDefault();
+    if (!account) {
+      alert("Please connect your MetaMask wallet to continue.");
+      return;
+    }
+    setUser({ ...user, role: role });
     setOnboardingStep(2);
   };
 
@@ -29,7 +35,8 @@ export const SignUpPage = () => {
   };
 
   const handleFinish = () => {
-    navigate('/dashboard');
+    setIsLoggedIn(true);
+    navigate('/app/dashboard');
   };
 
   return (
@@ -59,8 +66,19 @@ export const SignUpPage = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="signup-phone">Phone number</label>
-              <input className="form-control" id="signup-phone" type="tel" placeholder="+91 98765 43210" value={phone} onChange={e => setPhone(e.target.value)} required />
+              <label className="form-label">Web3 Wallet</label>
+              {!account ? (
+                <button type="button" className="btn btn-outline w-full" onClick={connectWallet}>
+                  <svg viewBox="0 0 32 32" fill="none" width="16" height="16" aria-hidden="true" style={{marginRight: '8px', verticalAlign: 'middle'}}>
+                    <path d="M29.5 12L20 4.5l-4-3-4 3-9.5 7.5L5 21l3 7.5L16 29l8-1.5 3-7.5 2.5-9z" fill="#F6851B" stroke="#F6851B" strokeWidth="1" strokeLinejoin="round"/>
+                  </svg>
+                  Connect MetaMask
+                </button>
+              ) : (
+                <div className="form-control" style={{background: 'var(--color-bg)', color: 'var(--color-success)', cursor: 'default'}}>
+                  Connected: {account.substring(0,6)}...{account.substring(38)}
+                </div>
+              )}
             </div>
 
             <div className="form-group">

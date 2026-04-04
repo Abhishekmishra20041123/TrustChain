@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Web3Context } from '../../context/Web3Context';
 import { MOCK_LOANS } from '../../data/mockData';
 import { useToast } from '../../components/shared/ToastProvider';
 import { fundPct, riskBadge } from '../../components/shared/SharedComponents';
@@ -8,6 +9,7 @@ export const FundLoanPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const showToast = useToast();
+  const { contract, account } = useContext(Web3Context);
 
   // Fall back to first loan if no state passed
   const loan = location.state?.loan || MOCK_LOANS[0];
@@ -18,16 +20,30 @@ export const FundLoanPage = () => {
   const expectedReturn = Math.round(fundAmount * (1 + (interestRate / 100) * (parseInt(loan.repaymentPeriod) / 12)));
   const { cls, label } = riskBadge(loan.riskTier);
 
-  const handleConfirm = () => {
-    if (window.showTcDialog) {
-      window.showTcDialog(
-        'Confirm Funding',
-        `You are funding ₹${fundAmount.toLocaleString('en-IN')} for ${loan.borrower}'s loan. Expected return: ₹${expectedReturn.toLocaleString('en-IN')} over ${loan.repaymentPeriod}.`,
-        () => {
-          showToast(`✅ ₹${fundAmount.toLocaleString('en-IN')} funded successfully!`, 'success');
-          navigate('/lender');
-        }
-      );
+  const handleConfirm = async () => {
+    if (!contract || !account) {
+      showToast('Please connect your MetaMask wallet first!', 'error');
+      return;
+    }
+
+    try {
+      showToast('Please confirm the funding transaction in MetaMask...', 'info');
+      
+      // We check if it's a real blockchain loan vs a mockup
+      const isBlockchainLoan = typeof loan.id === 'number';
+      const loanIdToFund = isBlockchainLoan ? loan.id : 0; // fallback to 0 for mock
+      
+      // Execute fundLoan on TrustChain contract, attaching native token value
+      const tx = await contract.fundLoan(loanIdToFund, { value: fundAmount });
+      
+      showToast('Waiting for blockchain confirmation...', 'info');
+      await tx.wait(); // Wait for the block to be mined
+      
+      showToast(`✅ ₹${fundAmount.toLocaleString('en-IN')} funded successfully via Blockchain!`, 'success');
+      navigate('/app/lender');
+    } catch (err) {
+      console.error(err);
+      showToast('Transaction was rejected or failed.', 'error');
     }
   };
 
@@ -117,7 +133,10 @@ export const FundLoanPage = () => {
             id="confirm-fund-btn"
             onClick={handleConfirm}
           >
-            ✓ Confirm &amp; Fund ₹{fundAmount.toLocaleString('en-IN')} →
+             <svg viewBox="0 0 32 32" fill="none" width="16" height="16" aria-hidden="true" style={{marginRight: '8px', verticalAlign: 'middle'}}>
+                <path d="M29.5 12L20 4.5l-4-3-4 3-9.5 7.5L5 21l3 7.5L16 29l8-1.5 3-7.5 2.5-9z" fill="#F6851B" stroke="#F6851B" strokeWidth="1" strokeLinejoin="round"/>
+             </svg>
+            Fund ₹{fundAmount.toLocaleString('en-IN')} with Web3 →
           </button>
         </div>
 

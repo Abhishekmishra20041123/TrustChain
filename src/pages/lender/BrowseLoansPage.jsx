@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Web3Context } from '../../context/Web3Context';
 import { MOCK_LOANS } from '../../data/mockData';
 import { LoanCard } from '../../components/shared/SharedComponents';
 
@@ -7,8 +8,54 @@ export const BrowseLoansPage = () => {
   const navigate = useNavigate();
   const [riskFilter, setRiskFilter] = useState('all');
   const [amountFilter, setAmountFilter] = useState('all');
+  const [liveLoans, setLiveLoans] = useState([]);
+  const { contract } = React.useContext(Web3Context);
 
-  const filtered = MOCK_LOANS.filter(l => {
+  // Poll Blockchain for Loans
+  React.useEffect(() => {
+    const fetchLoans = async () => {
+      if (!contract) return;
+      try {
+        const count = await contract.getLoanCount();
+        const loansArray = [];
+        for (let i = 0; i < Number(count); i++) {
+          const lData = await contract.loans(i);
+          // Only show pending loans (status == 0)
+          if (Number(lData.status) === 0) {
+            loansArray.push({
+              id: Number(lData.id),
+              borrower: lData.borrower.substring(0, 6) + "..." + lData.borrower.substring(38),
+              initials: lData.borrower.substring(2, 4).toUpperCase(),
+              avatarColor: '#534AB7',
+              amount: Number(lData.amount),
+              funded: 0,
+              daysLeft: 7,
+              trustScore: 72, // In a full app, we'd query contract.users()
+              riskTier: Number(lData.amount) > 15000 ? 'High' : 'Low',
+              story: lData.purpose,
+              location: "Decentralized",
+              repaymentPeriod: "3 Months"
+            });
+          }
+        }
+        setLiveLoans(loansArray.reverse()); // Show newest top
+      } catch (err) {
+        console.error("Failed to fetch loans from blockchain:", err);
+      }
+    };
+    
+    // Initial fetch
+    fetchLoans();
+    
+    // Dynamic polling every 5 seconds for robust hackathon demoing
+    const interval = setInterval(fetchLoans, 5000);
+    return () => clearInterval(interval);
+  }, [contract]);
+
+  // Combine real Blockchain loans acting exactly like our UI Mock Loans
+  const combinedLoans = [...liveLoans, ...MOCK_LOANS];
+
+  const filtered = combinedLoans.filter(l => {
     const riskOk = riskFilter === 'all' || l.riskTier === riskFilter;
     const amountOk = amountFilter === 'all'
       || (amountFilter === 'small' && l.amount <= 5000)

@@ -1,29 +1,19 @@
-import React, { useState } from 'react';
+import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AppContext } from '../../context/AppContext';
+import { Web3Context } from '../../context/Web3Context';
 
 export const LoginPage = () => {
-  const [step, setStep] = useState('phone'); // 'phone' | 'otp'
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const { setIsLoggedIn, setUser, user } = useContext(AppContext);
+  const { connectWallet, account } = useContext(Web3Context);
   const navigate = useNavigate();
 
-  const handleSendOTP = (e) => {
+  const handleMetamaskLogin = async (e) => {
     e.preventDefault();
-    if (phone.length >= 10) setStep('otp');
-  };
-
-  const handleOTPChange = (val, i) => {
-    const next = [...otp];
-    next[i] = val.slice(-1);
-    setOtp(next);
-    if (val && i < 3) {
-      document.getElementById(`otp-${i + 1}`)?.focus();
-    }
-  };
-
-  const handleVerify = (e) => {
-    e.preventDefault();
-    navigate('/dashboard');
+    await connectWallet();
+    setUser({ ...user, role: 'borrower' }); // Hackathon demo default
+    setIsLoggedIn(true);
+    navigate('/app/dashboard');
   };
 
   return (
@@ -41,55 +31,24 @@ export const LoginPage = () => {
         </div>
         <div className="auth-tagline">Your community is your credit score</div>
 
-        {step === 'phone' ? (
-          <form onSubmit={handleSendOTP} className="auth-form">
-            <h1 className="auth-title">Welcome back</h1>
-            <p className="auth-subtitle">Enter your phone or email to continue</p>
-            <div className="form-group">
-              <label className="form-label" htmlFor="login-phone">Phone number or Email</label>
-              <input
-                className="form-control"
-                id="login-phone"
-                type="text"
-                placeholder="+91 98765 43210"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-            <button type="submit" className="btn btn-primary w-full mt-4" id="send-otp-btn">
-              Send OTP →
-            </button>
-            <div className="auth-divider">No password needed — OTP only</div>
-          </form>
-        ) : (
-          <form onSubmit={handleVerify} className="auth-form">
-            <h1 className="auth-title">Enter OTP</h1>
-            <p className="auth-subtitle">We sent a 4-digit code to {phone}</p>
-            <div className="otp-grid" role="group" aria-label="Enter 4 digit OTP">
-              {otp.map((val, i) => (
-                <input
-                  key={i}
-                  id={`otp-${i}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength="1"
-                  className="otp-input"
-                  value={val}
-                  onChange={e => handleOTPChange(e.target.value, i)}
-                  aria-label={`OTP digit ${i + 1}`}
-                />
-              ))}
-            </div>
-            <button type="submit" className="btn btn-primary w-full mt-4" id="verify-otp-btn">
-              Verify &amp; Sign In
-            </button>
-            <button type="button" className="btn btn-ghost w-full mt-2" onClick={() => setStep('phone')}>
-              ← Change number
-            </button>
-          </form>
-        )}
+        <form onSubmit={handleMetamaskLogin} className="auth-form mt-4">
+          <h1 className="auth-title">Welcome back</h1>
+          <p className="auth-subtitle">Connect your Web3 Wallet to continue</p>
+          
+          <button type="submit" className="btn btn-primary w-full mt-4" id="connect-metamask-btn">
+             <svg viewBox="0 0 32 32" fill="none" width="20" height="20" aria-hidden="true" style={{marginRight: '8px', verticalAlign: 'middle'}}>
+                <path d="M29.5 12L20 4.5l-4-3-4 3-9.5 7.5L5 21l3 7.5L16 29l8-1.5 3-7.5 2.5-9z" fill="#F6851B" stroke="#F6851B" strokeWidth="1" strokeLinejoin="round"/>
+             </svg>
+            Connect MetaMask
+          </button>
+          
+          {account && (
+             <div className="text-center mt-4 text-sm text-success">
+               Connected: {account.substring(0,6)}...{account.substring(38)}
+             </div>
+          )}
+          <div className="auth-divider">Secure Blockchain Authentication</div>
+        </form>
 
         <div className="auth-footer-link">
           No account? <Link to="/signup">Create one here →</Link>
