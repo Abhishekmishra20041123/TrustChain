@@ -30,7 +30,11 @@ export const AppProvider = ({ children }) => {
 
   // Governance votes
   const [hasVotedFraud, setHasVotedFraud] = useState(null);
-  const [hasVotedGov, setHasVotedGov] = useState(null);
+  const [hasVotedGov, setHasVotedGov]     = useState(null);
+
+  // Community / Pod system (off-chain simulated store)
+  const [communities, setCommunities]       = useState([]);
+  const [userCommunityId, setUserCommunityId] = useState(null);
 
   // Recalculate trust score reactively
   useEffect(() => {
@@ -67,6 +71,10 @@ export const AppProvider = ({ children }) => {
     // Governance
     hasVotedFraud, setHasVotedFraud,
     hasVotedGov, setHasVotedGov,
+
+    // Community
+    communities, setCommunities,
+    userCommunityId, setUserCommunityId,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

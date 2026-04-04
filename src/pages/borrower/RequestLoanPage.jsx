@@ -7,15 +7,16 @@ import { calcLoan } from '../../utils/formatters';
 
 export const RequestLoanPage = () => {
   const { podStrength, verification } = useContext(AppContext);
-  const [amount, setAmount] = useState(10000);
-  const [period, setPeriod] = useState(3);
-  const [purpose, setPurpose] = useState('');
-  const [story, setStory] = useState('');
+  const [amount, setAmount]     = useState(10000);
+  const [period, setPeriod]     = useState(3);
+  const [purpose, setPurpose]   = useState('');
+  const [story, setStory]       = useState('');
   const [riskTier, setRiskTier] = useState('Low');
   const [weeklyPayment, setWeeklyPayment] = useState(0);
-  const { contract, account } = useContext(Web3Context);
-  const showToast = useToast();
-  const navigate = useNavigate();
+  const [onChainRate, setOnChainRate]     = useState(null); // live from contract
+  const { contract, account, trustScore } = useContext(Web3Context);
+  const showToast  = useToast();
+  const navigate   = useNavigate();
 
   useEffect(() => {
     const data = calcLoan(amount, period * 4, podStrength, verification);
@@ -23,8 +24,16 @@ export const RequestLoanPage = () => {
     setRiskTier(amount > 30000 ? 'High' : amount > 15000 ? 'Medium' : 'Low');
   }, [amount, period, podStrength, verification]);
 
+  // Fetch live on-chain interest rate for connected wallet
+  useEffect(() => {
+    if (!contract || !account) return;
+    contract.computeInterestRate(account)
+      .then(r => setOnChainRate(Number(r)))
+      .catch(() => {});
+  }, [contract, account]);
+
   const riskColor = { Low: 'var(--color-success)', Medium: 'var(--color-warning)', High: 'var(--color-danger)' };
-  const riskPill = { Low: 'pill-success', Medium: 'pill-warning', High: 'pill-danger' };
+  const riskPill  = { Low: 'pill-success', Medium: 'pill-warning', High: 'pill-danger' };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,20 +41,17 @@ export const RequestLoanPage = () => {
       showToast('Please connect your MetaMask wallet first!', 'error');
       return;
     }
-
     try {
       showToast('Please confirm the transaction in MetaMask...', 'info');
-      // Execute the requestLoan function from TrustChain.sol
-      const tx = await contract.requestLoan(amount, purpose);
-      
+      // Contract expects uint256 amount — pass as BigInt (wei equivalent for demo)
+      const tx = await contract.requestLoan(BigInt(amount), purpose);
       showToast('Waiting for blockchain confirmation...', 'info');
-      await tx.wait(); // Wait for the block to be mined
-      
-      showToast('Loan request successfully written to the blockchain! 🎉', 'success');
+      await tx.wait();
+      showToast('Loan request written to blockchain! 🎉', 'success');
       navigate('/app/dashboard');
     } catch (err) {
       console.error(err);
-      showToast('Transaction was rejected or failed.', 'error');
+      showToast('Transaction rejected or failed: ' + (err.reason || err.message), 'error');
     }
   };
 
@@ -183,6 +189,25 @@ export const RequestLoanPage = () => {
               <span className="text-sm">Verification</span>
               <span className={`pill text-xs ${verification === 'ngo' ? 'pill-success' : 'pill-warning'}`}>
                 {verification === 'ngo' ? 'NGO + Phone' : verification === 'phone' ? 'Phone only' : 'None'}
+              </span>
+            </div>
+            {/* Live On-Chain Data */}
+            <div className="factor-row" style={{ borderTop: '1px solid var(--color-border)', marginTop: '8px', paddingTop: '8px' }}>
+              <span className="text-sm">Your Trust Score</span>
+              <span className={`pill text-xs ${trustScore >= 80 ? 'pill-success' : trustScore >= 60 ? 'pill-warning' : 'pill-danger'}`}>
+                {trustScore !== null ? trustScore : '…'} pts  ⛓️
+              </span>
+            </div>
+            <div className="factor-row">
+              <span className="text-sm">On-Chain Interest Rate</span>
+              <span className={`pill text-xs ${onChainRate === 12 ? 'pill-success' : onChainRate === 16 ? 'pill-warning' : 'pill-danger'}`}>
+                {onChainRate !== null ? `${onChainRate}% flat` : '…'}
+              </span>
+            </div>
+            <div className="factor-row">
+              <span className="text-sm">Total You Owe</span>
+              <span className="pill text-xs pill-warning">
+                ₹{onChainRate !== null ? (amount + Math.round(amount * onChainRate / 100)).toLocaleString('en-IN') : '…'}
               </span>
             </div>
           </div>

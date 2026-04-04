@@ -1,87 +1,80 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 import TrustChainABI from "../artifacts/contracts/TrustChain.sol/TrustChain.json";
 
 export const Web3Context = createContext();
 
-// Make sure to replace with your deployed contract address from Hardhat deployment
-const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; 
+const CONTRACT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
 
 export const Web3Provider = ({ children }) => {
-  const [account, setAccount] = useState("");
-  const [contract, setContract] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
+  const [account, setAccount]       = useState("");
+  const [contract, setContract]     = useState(null);
+  const [provider, setProvider]     = useState(null);
+  const [signer, setSigner]         = useState(null);
+  const [trustScore, setTrustScore] = useState(null);
 
-  // Connect to MetaMask
+  const refreshTrustScore = useCallback(async (addr, c) => {
+    if (!addr || !c) return;
+    try {
+      const userData = await c.users(addr);
+      setTrustScore(Number(userData.trustScore));
+    } catch (_) {}
+  }, []);
+
   const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        
-        setAccount(accounts[0]);
-        
-        const ethersProvider = new ethers.BrowserProvider(window.ethereum);
-        setProvider(ethersProvider);
-        
-        const ethersSigner = await ethersProvider.getSigner();
-        setSigner(ethersSigner);
-
-        const trustChainContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          TrustChainABI.abi, // from compiled artifacts
-          ethersSigner
-        );
-        
-        setContract(trustChainContract);
-        console.log("Connected to Wallet:", accounts[0]);
-
-        // Auto-Register user globally for the Hackathon Demo
-        try {
-          const userCheck = await trustChainContract.users(accounts[0]);
-          if (!userCheck.isRegistered) {
-            console.log("On-Chain Auto Registration initiated...");
-            const tx = await trustChainContract.registerUser(72);
-            await tx.wait();
-            console.log("Successfully registered on blockchain!");
-          } else {
-             console.log("User already registered on blockchain.");
-          }
-        } catch(e) {
-          console.error("Auto-registration silently failed or aborted", e);
-        }
-
-      } catch (error) {
-        console.error("Wallet connection failed", error);
-      }
-    } else {
+    if (!window.ethereum) {
       alert("Please install MetaMask to use this feature!");
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      const addr = accounts[0];
+      setAccount(addr);
+
+      const ethersProvider = new ethers.BrowserProvider(window.ethereum);
+      setProvider(ethersProvider);
+
+      const ethersSigner = await ethersProvider.getSigner();
+      setSigner(ethersSigner);
+
+      const c = new ethers.Contract(CONTRACT_ADDRESS, TrustChainABI.abi, ethersSigner);
+      setContract(c);
+      console.log("Connected to Wallet:", addr);
+
+      // Auto-register new user — new contract registerUser() takes no args
+      try {
+        const userCheck = await c.users(addr);
+        if (!userCheck.isRegistered) {
+          console.log("Auto-registering on blockchain... base score = 50");
+          const tx = await c.registerUser();
+          await tx.wait();
+          console.log("Registered on blockchain!");
+        } else {
+          console.log("User already registered.");
+        }
+      } catch (e) {
+        console.error("Auto-registration failed", e);
+      }
+
+      await refreshTrustScore(addr, c);
+    } catch (error) {
+      console.error("Wallet connection failed", error);
     }
   };
 
-  // Re-connect on load if already connected
   useEffect(() => {
-    if (window.ethereum && window.ethereum.selectedAddress) {
-      connectWallet();
-    }
-    
-    // Auto refresh on account change
+    if (window.ethereum?.selectedAddress) connectWallet();
+
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        if(accounts.length > 0) {
-          connectWallet();
-        } else {
-          setAccount("");
-          setContract(null);
-        }
+      window.ethereum.on("accountsChanged", (accounts) => {
+        if (accounts.length > 0) connectWallet();
+        else { setAccount(""); setContract(null); setTrustScore(null); }
       });
     }
   }, []);
 
   return (
-    <Web3Context.Provider value={{ account, connectWallet, contract, provider, signer }}>
+    <Web3Context.Provider value={{ account, connectWallet, contract, provider, signer, trustScore, refreshTrustScore }}>
       {children}
     </Web3Context.Provider>
   );

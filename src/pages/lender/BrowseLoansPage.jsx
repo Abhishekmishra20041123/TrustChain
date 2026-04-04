@@ -20,34 +20,44 @@ export const BrowseLoansPage = () => {
         const loansArray = [];
         for (let i = 0; i < Number(count); i++) {
           const lData = await contract.loans(i);
-          // Only show pending loans (status == 0)
-          if (Number(lData.status) === 0) {
+          if (Number(lData.status) === 0) { // Pending only
+            // Fetch borrower's live TrustScore from chain
+            let score = 50;
+            try {
+              const uData = await contract.users(lData.borrower);
+              score = Number(uData.trustScore);
+            } catch (_) {}
+
+            const principal    = Number(lData.principal);
+            const interestRate = Number(lData.interestRate);
+            const totalOwed    = Number(lData.totalOwed);
+
             loansArray.push({
               id: Number(lData.id),
+              borrowerAddress: lData.borrower,
               borrower: lData.borrower.substring(0, 6) + "..." + lData.borrower.substring(38),
               initials: lData.borrower.substring(2, 4).toUpperCase(),
               avatarColor: '#534AB7',
-              amount: Number(lData.amount),
+              amount: principal,
+              totalOwed,
+              interestRate,
               funded: 0,
               daysLeft: 7,
-              trustScore: 72, // In a full app, we'd query contract.users()
-              riskTier: Number(lData.amount) > 15000 ? 'High' : 'Low',
+              trustScore: score,
+              riskTier: interestRate === 12 ? 'Low' : interestRate === 16 ? 'Medium' : 'High',
               story: lData.purpose,
               location: "Decentralized",
               repaymentPeriod: "3 Months"
             });
           }
         }
-        setLiveLoans(loansArray.reverse()); // Show newest top
+        setLiveLoans(loansArray.reverse());
       } catch (err) {
-        console.error("Failed to fetch loans from blockchain:", err);
+        console.error("Failed to fetch loans:", err);
       }
     };
-    
-    // Initial fetch
+
     fetchLoans();
-    
-    // Dynamic polling every 5 seconds for robust hackathon demoing
     const interval = setInterval(fetchLoans, 5000);
     return () => clearInterval(interval);
   }, [contract]);
