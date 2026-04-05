@@ -55,7 +55,7 @@ export const LoginPage = () => {
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
-      .single();
+      .maybeSingle(); // Prevents 406 when profile row doesn't exist yet
 
     setUser({
       id: data.user.id,

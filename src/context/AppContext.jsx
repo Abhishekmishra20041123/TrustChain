@@ -14,20 +14,20 @@ export const AppProvider = ({ children }) => {
   // Fetch full profile using the authenticated user id
   const loadProfile = async (authUser) => {
     if (!authUser) return;
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', authUser.id)
-      .single();
+      .maybeSingle(); // maybeSingle() returns null (not 406) when row doesn't exist
     
-    if (profile) {
-      setUser({
-        ...authUser,
-        ...profile,
-        kycStatus: profile.kyc_status, // map DB snake_case to app camelCase
-      });
-      setIsLoggedIn(true);
-    }
+    if (error) console.warn('Profile fetch error:', error.message);
+
+    setUser({
+      ...authUser,
+      ...(profile || {}),
+      kycStatus: profile?.kyc_status || 'pending',
+    });
+    setIsLoggedIn(true);
   };
 
   useEffect(() => {
